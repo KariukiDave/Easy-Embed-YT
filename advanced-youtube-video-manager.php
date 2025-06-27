@@ -62,6 +62,18 @@ class AdvancedYouTubeVideo {
         ) $charset_collate;";
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql);
+        // Create youtube_video_views table for analytics
+        $views_table = $wpdb->prefix . 'youtube_video_views';
+        $sql2 = "CREATE TABLE $views_table (
+            id BIGINT(20) NOT NULL AUTO_INCREMENT,
+            video_id MEDIUMINT(9) NOT NULL,
+            view_date DATE NOT NULL,
+            views INT(11) NOT NULL DEFAULT 1,
+            PRIMARY KEY (id),
+            KEY video_id (video_id),
+            KEY view_date (view_date)
+        ) $charset_collate;";
+        dbDelta($sql2);
     }
 
     public function enqueue_scripts() {
@@ -732,6 +744,22 @@ class AdvancedYouTubeVideo {
             "UPDATE $table_name SET view_count = view_count + 1 WHERE id = %d",
             $video_id
         ));
+        // Log to youtube_video_views table (per day)
+        $views_table = $wpdb->prefix . 'youtube_video_views';
+        $today = current_time('Y-m-d');
+        // Try to update existing row
+        $updated = $wpdb->query($wpdb->prepare(
+            "UPDATE $views_table SET views = views + 1 WHERE video_id = %d AND view_date = %s",
+            $video_id, $today
+        ));
+        // If no row was updated, insert new row
+        if ($updated === 0) {
+            $wpdb->insert($views_table, array(
+                'video_id' => $video_id,
+                'view_date' => $today,
+                'views' => 1
+            ));
+        }
     }
 
     public function track_video_play() {
