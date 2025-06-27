@@ -220,10 +220,13 @@ class AdvancedYouTubeVideo {
             $table_name = $wpdb->prefix . 'youtube_videos';
             $video = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $edit_id));
         }
+        
+        // Get global settings for defaults
+        $settings = get_option($this->settings_option, $this->get_default_settings());
         ?>
         <div class="tabcontent">
             <h2><?php echo $edit_id ? 'Edit Video' : 'Add New Video'; ?></h2>
-            <form method="post" action="">
+            <form method="post" action="" id="youtube-video-form">
                 <?php wp_nonce_field('youtube_video_action', 'youtube_video_nonce'); ?>
                 <?php if ($edit_id): ?>
                     <input type="hidden" name="video_id" value="<?php echo $edit_id; ?>">
@@ -231,56 +234,349 @@ class AdvancedYouTubeVideo {
                 <?php else: ?>
                     <input type="hidden" name="action" value="add_video">
                 <?php endif; ?>
-                <table class="form-table">
-                    <tr>
-                        <th><label for="title">Video Title</label></th>
-                        <td>
-                            <input type="text" id="title" name="title" value="<?php echo $video ? esc_attr($video->title) : ''; ?>" class="regular-text" required>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th><label for="youtube_url">YouTube URL</label></th>
-                        <td>
-                            <input type="url" id="youtube_url" name="youtube_url" value="<?php echo $video ? esc_attr($video->youtube_url) : ''; ?>" class="regular-text" required>
-                            <p class="description">Enter video URL or playlist URL</p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th><label for="start_date">Start Date (Optional)</label></th>
-                        <td>
-                            <input type="datetime-local" id="start_date" name="start_date" value="<?php echo $video && $video->start_date ? date('Y-m-d\TH:i', strtotime($video->start_date)) : ''; ?>">
-                            <p class="description">When should this video become visible?</p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th><label for="end_date">End Date (Optional)</label></th>
-                        <td>
-                            <input type="datetime-local" id="end_date" name="end_date" value="<?php echo $video && $video->end_date ? date('Y-m-d\TH:i', strtotime($video->end_date)) : ''; ?>">
-                            <p class="description">When should this video be hidden?</p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>Player Options</th>
-                        <td>
-                            <label><input type="checkbox" name="autoplay" value="1" <?php echo $video && $video->autoplay ? 'checked' : ''; ?>> Autoplay</label><br>
-                            <label><input type="checkbox" name="hide_controls" value="1" <?php echo $video && $video->hide_controls ? 'checked' : ''; ?>> Hide Controls</label><br>
-                            <label><input type="checkbox" name="loop_video" value="1" <?php echo $video && $video->loop_video ? 'checked' : ''; ?>> Loop Video</label><br>
-                            <label><input type="checkbox" name="mute_video" value="1" <?php echo $video && $video->mute_video ? 'checked' : ''; ?>> Mute Video</label><br>
-                            <label><input type="checkbox" name="lazy_load" value="1" <?php echo $video && $video->lazy_load ? 'checked' : ''; ?>> Lazy Load (Show thumbnail first)</label><br>
-                            <label><input type="checkbox" name="lightbox" value="1" <?php echo $video && $video->lightbox ? 'checked' : ''; ?>> Open in Lightbox</label>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th><label for="start_time">Start Time (seconds)</label></th>
-                        <td>
-                            <input type="number" id="start_time" name="start_time" value="<?php echo $video ? $video->start_time : 0; ?>" min="0">
-                            <p class="description">Start video at specific time (in seconds)</p>
-                        </td>
-                    </tr>
-                </table>
-                <?php submit_button($edit_id ? 'Update Video' : 'Add Video'); ?>
+                
+                <!-- Basic Info Section -->
+                <div class="postbox">
+                    <div class="postbox-header">
+                        <h2 class="hndle">Basic Info</h2>
+                    </div>
+                    <div class="inside">
+                        <table class="form-table">
+                            <tr>
+                                <th><label for="title">Video Title</label></th>
+                                <td>
+                                    <input type="text" id="title" name="title" value="<?php echo $video ? esc_attr($video->title) : ''; ?>" class="regular-text" required>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th><label for="youtube_url">YouTube URL</label></th>
+                                <td>
+                                    <input type="url" id="youtube_url" name="youtube_url" value="<?php echo $video ? esc_attr($video->youtube_url) : ''; ?>" class="regular-text" required placeholder="https://www.youtube.com/watch?v=...">
+                                    <p class="description">Enter video URL or playlist URL</p>
+                                    <div id="url-validation" style="margin-top: 10px; display: none;">
+                                        <div id="url-error" class="notice notice-error" style="display: none; margin: 5px 0;"></div>
+                                        <div id="url-preview" style="display: none; margin: 10px 0; padding: 10px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px;">
+                                            <div style="display: flex; align-items: center; gap: 15px;">
+                                                <img id="video-thumbnail" src="" style="width: 120px; height: 90px; object-fit: cover; border-radius: 4px;">
+                                                <div>
+                                                    <h4 id="video-title" style="margin: 0 0 5px 0;"></h4>
+                                                    <p id="video-type" style="margin: 0; color: #666;"></p>
+                                                    <p id="video-id" style="margin: 5px 0 0 0; font-family: monospace; font-size: 12px; color: #0073aa;"></p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Player Settings Section -->
+                <div class="postbox">
+                    <div class="postbox-header">
+                        <h2 class="hndle">Player Settings</h2>
+                        <div class="handle-actions">
+                            <button type="button" class="handlediv" aria-expanded="true">
+                                <span class="screen-reader-text">Toggle panel</span>
+                                <span class="toggle-indicator" aria-hidden="true"></span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="inside">
+                        <table class="form-table">
+                            <tr>
+                                <th>Player Options</th>
+                                <td>
+                                    <fieldset>
+                                        <label>
+                                            <input type="checkbox" name="autoplay" value="1" <?php checked($video ? $video->autoplay : $settings['default_autoplay'], 1); ?>>
+                                            Autoplay
+                                        </label>
+                                        <span class="dashicons dashicons-editor-help" style="color: #0073aa; cursor: help;" title="Automatically start playing when the video loads"></span>
+                                        <br><br>
+                                        
+                                        <label>
+                                            <input type="checkbox" name="hide_controls" value="1" <?php checked($video ? $video->hide_controls : $settings['default_hide_controls'], 1); ?>>
+                                            Hide Controls
+                                        </label>
+                                        <span class="dashicons dashicons-editor-help" style="color: #0073aa; cursor: help;" title="Hide YouTube player controls (play/pause, volume, etc.)"></span>
+                                        <br><br>
+                                        
+                                        <label>
+                                            <input type="checkbox" name="loop_video" value="1" <?php checked($video ? $video->loop_video : $settings['default_loop'], 1); ?>>
+                                            Loop Video
+                                        </label>
+                                        <span class="dashicons dashicons-editor-help" style="color: #0073aa; cursor: help;" title="Automatically restart the video when it ends"></span>
+                                        <br><br>
+                                        
+                                        <label>
+                                            <input type="checkbox" name="mute_video" value="1" <?php checked($video ? $video->mute_video : 0, 1); ?>>
+                                            Mute Video
+                                        </label>
+                                        <span class="dashicons dashicons-editor-help" style="color: #0073aa; cursor: help;" title="Start the video muted"></span>
+                                    </fieldset>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Schedule Visibility Section -->
+                <div class="postbox">
+                    <div class="postbox-header">
+                        <h2 class="hndle">Schedule Visibility</h2>
+                        <div class="handle-actions">
+                            <button type="button" class="handlediv" aria-expanded="false">
+                                <span class="screen-reader-text">Toggle panel</span>
+                                <span class="toggle-indicator" aria-hidden="true"></span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="inside" style="display: none;">
+                        <table class="form-table">
+                            <tr>
+                                <th>
+                                    <label for="enable_schedule">Schedule when this video is visible</label>
+                                </th>
+                                <td>
+                                    <label>
+                                        <input type="checkbox" id="enable_schedule" name="enable_schedule" value="1" <?php checked(($video && ($video->start_date || $video->end_date)), 1); ?>>
+                                        Enable scheduling
+                                    </label>
+                                    <div id="schedule_fields" style="margin-top: 15px; display: none;">
+                                        <p>
+                                            <label for="start_date">Start Date:</label><br>
+                                            <input type="datetime-local" id="start_date" name="start_date" value="<?php echo $video && $video->start_date ? date('Y-m-d\TH:i', strtotime($video->start_date)) : ''; ?>">
+                                        </p>
+                                        <p>
+                                            <label for="end_date">End Date:</label><br>
+                                            <input type="datetime-local" id="end_date" name="end_date" value="<?php echo $video && $video->end_date ? date('Y-m-d\TH:i', strtotime($video->end_date)) : ''; ?>">
+                                        </p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Advanced Options Section -->
+                <div class="postbox">
+                    <div class="postbox-header">
+                        <h2 class="hndle">Advanced Options</h2>
+                        <div class="handle-actions">
+                            <button type="button" class="handlediv" aria-expanded="false">
+                                <span class="screen-reader-text">Toggle panel</span>
+                                <span class="toggle-indicator" aria-hidden="true"></span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="inside" style="display: none;">
+                        <table class="form-table">
+                            <tr>
+                                <th>Display Options</th>
+                                <td>
+                                    <fieldset>
+                                        <label>
+                                            <input type="checkbox" name="lazy_load" value="1" <?php checked($video ? $video->lazy_load : $settings['default_lazy_load'], 1); ?>>
+                                            Lazy Load (Show thumbnail until clicked)
+                                        </label>
+                                        <span class="dashicons dashicons-editor-help" style="color: #0073aa; cursor: help;" title="Show video thumbnail first, load player only when clicked"></span>
+                                        <br><br>
+                                        
+                                        <label>
+                                            <input type="checkbox" name="lightbox" value="1" <?php checked($video ? $video->lightbox : $settings['default_lightbox'], 1); ?>>
+                                            Open in Lightbox
+                                        </label>
+                                        <span class="dashicons dashicons-editor-help" style="color: #0073aa; cursor: help;" title="Open video in a popup overlay instead of inline"></span>
+                                    </fieldset>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>
+                                    <label for="start_time">Start Time (seconds)</label>
+                                </th>
+                                <td>
+                                    <input type="number" id="start_time" name="start_time" value="<?php echo $video ? $video->start_time : 0; ?>" min="0" step="1">
+                                    <p class="description">Start playback at this timestamp</p>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- View Tracking Section (if enabled globally) -->
+                <?php if ($settings['default_analytics']): ?>
+                <div class="postbox">
+                    <div class="postbox-header">
+                        <h2 class="hndle">View Tracking</h2>
+                    </div>
+                    <div class="inside">
+                        <table class="form-table">
+                            <tr>
+                                <th>Analytics</th>
+                                <td>
+                                    <fieldset>
+                                        <label>
+                                            <input type="checkbox" name="track_views" value="1" <?php checked(1, 1); ?>>
+                                            Track views for this video
+                                        </label>
+                                        <span class="dashicons dashicons-editor-help" style="color: #0073aa; cursor: help;" title="Track video views for analytics dashboard"></span>
+                                    </fieldset>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <p class="submit">
+                    <?php submit_button($edit_id ? 'Update Video' : 'Add Video'); ?>
+                </p>
             </form>
         </div>
+
+        <style>
+        .postbox {
+            margin-bottom: 20px;
+        }
+        .postbox .inside {
+            padding: 12px;
+        }
+        .postbox-header {
+            border-bottom: 1px solid #ccd0d4;
+            padding: 8px 12px;
+            background: #f9f9f9;
+        }
+        .postbox-header h2 {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .handle-actions {
+            float: right;
+        }
+        .handlediv {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+        }
+        .toggle-indicator {
+            color: #787c82;
+            font-size: 20px;
+        }
+        .handlediv[aria-expanded="true"] .toggle-indicator::before {
+            content: "\f142";
+        }
+        .handlediv[aria-expanded="false"] .toggle-indicator::before {
+            content: "\f140";
+        }
+        #url-preview {
+            max-width: 500px;
+        }
+        </style>
+
+        <script>
+        jQuery(document).ready(function($) {
+            // URL validation and preview
+            var validationTimeout;
+            $('#youtube_url').on('input paste', function() {
+                clearTimeout(validationTimeout);
+                var url = $(this).val();
+                
+                if (url.length > 10) {
+                    validationTimeout = setTimeout(function() {
+                        validateYouTubeUrl(url);
+                    }, 500);
+                } else {
+                    $('#url-validation').hide();
+                }
+            });
+
+            function validateYouTubeUrl(url) {
+                $('#url-validation').show();
+                $('#url-error').hide();
+                $('#url-preview').hide();
+                
+                // Simple validation patterns
+                var videoPattern = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]+)/;
+                var playlistPattern = /(?:youtube\.com\/playlist\?list=|youtube\.com\/watch\?.*list=)([a-zA-Z0-9_-]+)/;
+                
+                var videoMatch = url.match(videoPattern);
+                var playlistMatch = url.match(playlistPattern);
+                
+                if (videoMatch) {
+                    var videoId = videoMatch[1];
+                    showVideoPreview(videoId, 'video');
+                } else if (playlistMatch) {
+                    var playlistId = playlistMatch[1];
+                    showVideoPreview(playlistId, 'playlist');
+                } else {
+                    showUrlError('Invalid YouTube URL format. Please enter a valid YouTube video or playlist URL.');
+                }
+            }
+
+            function showVideoPreview(id, type) {
+                var thumbnailUrl = type === 'playlist' 
+                    ? 'https://img.youtube.com/vi/default/maxresdefault.jpg'
+                    : 'https://img.youtube.com/vi/' + id + '/maxresdefault.jpg';
+                
+                $('#video-thumbnail').attr('src', thumbnailUrl);
+                $('#video-title').text('Video ID: ' + id);
+                $('#video-type').text(type === 'playlist' ? 'Playlist' : 'Video');
+                $('#video-id').text('ID: ' + id);
+                $('#url-preview').show();
+            }
+
+            function showUrlError(message) {
+                $('#url-error').text(message).show();
+            }
+
+            // Collapsible sections
+            $('.handlediv').on('click', function() {
+                var postbox = $(this).closest('.postbox');
+                var inside = postbox.find('.inside');
+                var expanded = inside.is(':visible');
+                
+                if (expanded) {
+                    inside.slideUp();
+                    $(this).attr('aria-expanded', 'false');
+                } else {
+                    inside.slideDown();
+                    $(this).attr('aria-expanded', 'true');
+                }
+            });
+
+            // Schedule toggle
+            $('#enable_schedule').on('change', function() {
+                if ($(this).is(':checked')) {
+                    $('#schedule_fields').slideDown();
+                } else {
+                    $('#schedule_fields').slideUp();
+                }
+            });
+
+            // Form validation
+            $('#youtube-video-form').on('submit', function(e) {
+                var url = $('#youtube_url').val();
+                var videoPattern = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]+)/;
+                var playlistPattern = /(?:youtube\.com\/playlist\?list=|youtube\.com\/watch\?.*list=)([a-zA-Z0-9_-]+)/;
+                
+                if (!videoPattern.test(url) && !playlistPattern.test(url)) {
+                    e.preventDefault();
+                    alert('Please enter a valid YouTube URL before submitting.');
+                    $('#youtube_url').focus();
+                    return false;
+                }
+            });
+
+            // Initialize schedule fields visibility
+            if ($('#enable_schedule').is(':checked')) {
+                $('#schedule_fields').show();
+            }
+        });
+        </script>
         <?php
     }
 
