@@ -9,101 +9,7 @@
  * License: GPL v2 or later
  */
 
-
-    /**
-     * Handle form submissions
-     */
-    private function handle_form_submission() {
-        if (!isset($_POST['action'])) {
-            return;
-        }
-        
-        $action = $_POST['action'];
-        
-        if ($action === 'add_video' || $action === 'update_video') {
-            if (!wp_verify_nonce($_POST['youtube_video_nonce'], 'youtube_video_action')) {
-                wp_die('Security check failed');
-            }
-            
-            $this->save_video();
-        }
-        
-        if (isset($_GET['action']) && $_GET['action'] === 'delete' && isset($_GET['id'])) {
-            $this->delete_video(intval($_GET['id']));
-        }
-    }
-    
-    /**
-     * Save video to database
-     */
-    private function save_video() {
-        global $wpdb;
-        $table_name = $wpdb->prefix . 'youtube_videos';
-        
-        $youtube_url = sanitize_url($_POST['youtube_url']);
-        $video_id = $this->extract_youtube_id($youtube_url);
-        $playlist_id = $this->extract_playlist_id($youtube_url);
-        $is_playlist = !empty($playlist_id);
-        
-        $data = array(
-            'title' => sanitize_text_field($_POST['title']),
-            'youtube_url' => $youtube_url,
-            'video_id' => $video_id,
-            'playlist_id' => $playlist_id,
-            'is_playlist' => $is_playlist ? 1 : 0,
-            'start_date' => !empty($_POST['start_date']) ? $_POST['start_date'] : null,
-            'end_date' => !empty($_POST['end_date']) ? $_POST['end_date'] : null,
-            'autoplay' => isset($_POST['autoplay']) ? 1 : 0,
-            'hide_controls' => isset($_POST['hide_controls']) ? 1 : 0,
-            'loop_video' => isset($_POST['loop_video']) ? 1 : 0,
-            'start_time' => intval($_POST['start_time']),
-            'mute_video' => isset($_POST['mute_video']) ? 1 : 0,
-            'lazy_load' => isset($_POST['lazy_load']) ? 1 : 0,
-            'lightbox' => isset($_POST['lightbox']) ? 1 : 0,
-        );
-        
-        if (isset($_POST['video_id']) && $_POST['video_id']) {
-            // Update existing video
-            $wpdb->update($table_name, $data, array('id' => intval($_POST['video_id'])));
-            echo '<div class="notice notice-success is-dismissible"><p>Video updated successfully!</p></div>';
-        } else {
-            // Add new video
-            $wpdb->insert($table_name, $data);
-            echo '<div class="notice notice-success is-dismissible"><p>Video added successfully!</p></div>';
-        }
-    }
-    
-    /**
-     * Delete video
-     */
-    private function delete_video($id) {
-        global $wpdb;
-        $table_name = $wpdb->prefix . 'youtube_videos';
-        
-        $wpdb->delete($table_name, array('id' => $id));
-        echo '<div class="notice notice-success is-dismissible"><p>Video deleted successfully!</p></div>';
-    }
-    
-    /**
-     * Legacy shortcode handler (backward compatible)
-     */
-    public function render_youtube_video($atts) {
-        // Check for legacy single video option first
-        $legacy_url = get_option($this->option_name, '');
-        
-        if (!empty($legacy_url)) {
-            return $this->get_youtube_embed($legacy_url);
-        }
-        
-        // Fall back to first active video
-        global $wpdb;
-        $table_name = $wpdb->prefix . 'youtube_videos';
-        $video = $wpdb->get_row("SELECT * FROM $table_name WHERE (start_date IS NULL OR start_date <= NOW()) AND (end_date IS NULL OR end_date >= NOW()) ORDER BY created_at ASC LIMIT 1");
-        
-        if (!$video) {// Prevent direct access
-if (!defined('ABSPATH')) {
-    exit;
-}
+if (!defined('ABSPATH')) exit;
 
 if (!class_exists('AdvancedYouTubeVideo')) {
 class AdvancedYouTubeVideo {
@@ -120,17 +26,12 @@ class AdvancedYouTubeVideo {
     }
 
     public function init() {
-        // Create database tables
         $this->create_tables();
-        // Add admin menu
         add_action('admin_menu', array($this, 'add_admin_menu'));
-        // Register shortcodes (backward compatible)
         add_shortcode('youtube_video', array($this, 'render_youtube_video'));
         add_shortcode('custom_youtube_video', array($this, 'render_custom_youtube_video'));
         add_shortcode('youtube_playlist', array($this, 'render_youtube_playlist'));
-        // Register settings
         add_action('admin_init', array($this, 'register_settings'));
-        // Admin scripts
         add_action('admin_enqueue_scripts', array($this, 'admin_enqueue_scripts'));
     }
 
@@ -680,9 +581,9 @@ class AdvancedYouTubeVideo {
 
     private function extract_youtube_id($url) {
         $patterns = array(
-            '/youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/',
-            '/youtube\.com\/embed\/([a-zA-Z0-9_-]+)/',
-            '/youtu\.be\/([a-zA-Z0-9_-]+)/',
+            '/youtube\\.com\\/watch\\?v=([a-zA-Z0-9_-]+)/',
+            '/youtube\\.com\\/embed\\/([a-zA-Z0-9_-]+)/',
+            '/youtu\\.be\\/([a-zA-Z0-9_-]+)/',
         );
         foreach ($patterns as $pattern) {
             if (preg_match($pattern, $url, $matches)) {
@@ -694,8 +595,8 @@ class AdvancedYouTubeVideo {
 
     private function extract_playlist_id($url) {
         $patterns = array(
-            '/youtube\.com\/playlist\?list=([a-zA-Z0-9_-]+)/',
-            '/youtube\.com\/watch\?.*list=([a-zA-Z0-9_-]+)/',
+            '/youtube\\.com\\/playlist\\?list=([a-zA-Z0-9_-]+)/',
+            '/youtube\\.com\\/watch\\?.*list=([a-zA-Z0-9_-]+)/',
         );
         foreach ($patterns as $pattern) {
             if (preg_match($pattern, $url, $matches)) {
