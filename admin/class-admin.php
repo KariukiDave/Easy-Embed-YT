@@ -143,19 +143,7 @@ class YouTubeVideoAdmin {
             echo '<div class="notice notice-success is-dismissible"><p>Video updated successfully!</p></div>';
         } else {
             $result = $this->database->save_video($data);
-            if ($result) {
-                $new_video_id = $this->database->get_last_insert_id();
-                $shortcode = $is_playlist ? 
-                    "[youtube_playlist id=\"{$new_video_id}\"]" : 
-                    "[custom_youtube_video id=\"{$new_video_id}\"]";
-                echo '<div class="notice notice-success is-dismissible">
-                    <p>Video added successfully! 
-                    <strong>Shortcode:</strong> 
-                    <code class="shortcode-copy" data-shortcode="' . esc_attr($shortcode) . '" style="cursor: pointer; padding: 2px 5px; background: #fff; border-radius: 3px; margin-left: 5px;" title="Click to copy">' . $shortcode . '</code>
-                    <span id="copy-feedback" style="color: green; margin-left: 10px; display: none;">✓ Copied!</span>
-                    </p>
-                </div>';
-            } else {
+            if (!$result) {
                 echo '<div class="notice notice-error is-dismissible"><p>Error adding video. Please try again.</p></div>';
             }
         }

@@ -29,7 +29,8 @@ class YouTubeVideoAnalytics {
     }
     
     public function get_analytics_summary() {
-        $videos = $this->database->get_videos();
+        // Fetch videos ordered by view_count DESC
+        $videos = $this->database->get_videos('view_count DESC');
         $total_videos = count($videos);
         $total_views = array_sum(array_map(function($v) { return $v->view_count; }, $videos));
         $most_viewed = $total_videos > 0 ? $videos[0]->title : 'N/A';

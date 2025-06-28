@@ -29,18 +29,18 @@ class AdvancedYouTubeVideo {
     }
     
     private function load_dependencies() {
-        // Load admin functionality
+        // Load core functionality first
+        require_once plugin_dir_path(__FILE__) . 'class-database.php';
+        require_once plugin_dir_path(__FILE__) . 'class-settings.php';
+        require_once plugin_dir_path(__FILE__) . 'class-analytics.php';
+        require_once plugin_dir_path(__FILE__) . 'class-player.php';
+        require_once plugin_dir_path(__FILE__) . 'class-shortcodes.php';
+        
+        // Load admin functionality after core classes are available
         if (is_admin()) {
             require_once plugin_dir_path(__FILE__) . '../admin/class-admin.php';
             new YouTubeVideoAdmin($this);
         }
-        
-        // Load core functionality
-        require_once plugin_dir_path(__FILE__) . 'class-database.php';
-        require_once plugin_dir_path(__FILE__) . 'class-shortcodes.php';
-        require_once plugin_dir_path(__FILE__) . 'class-player.php';
-        require_once plugin_dir_path(__FILE__) . 'class-analytics.php';
-        require_once plugin_dir_path(__FILE__) . 'class-settings.php';
     }
     
     private function setup_hooks() {

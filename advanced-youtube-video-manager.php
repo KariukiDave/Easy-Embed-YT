@@ -3,7 +3,9 @@
  * Plugin Name: Advanced YouTube Video Manager
  * Plugin URI: https://yourwebsite.com
  * Description: Advanced YouTube video management with scheduling, playlists, analytics, and multiple video support.
- * Version: 2.3.0
+ * Version: 2.4.0
+ * Requires at least: 5.0
+ * Requires PHP: 7.4
  * Author: Glowbal Digital
  * Author URI: http://glowbal.co.ke/?ref=YTembedplugin
  * License: GPL v2 or later
@@ -12,7 +14,7 @@
 if (!defined('ABSPATH')) exit;
 
 // Define plugin constants
-define('YT_VIDEO_MANAGER_VERSION', '2.3.0');
+define('YT_VIDEO_MANAGER_VERSION', '2.4.0');
 define('YT_VIDEO_MANAGER_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('YT_VIDEO_MANAGER_PLUGIN_URL', plugin_dir_url(__FILE__));
 

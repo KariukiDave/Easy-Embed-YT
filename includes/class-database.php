@@ -159,4 +159,9 @@ class YouTubeVideoDatabase {
             $limit
         ));
     }
+    
+    public function get_last_insert_id() {
+        global $wpdb;
+        return $wpdb->insert_id;
+    }
 } 

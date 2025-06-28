@@ -23,6 +23,8 @@ class YouTubeVideoShortcodes {
         add_shortcode('youtube_video', array($this, 'render_youtube_video'));
         add_shortcode('custom_youtube_video', array($this, 'render_custom_youtube_video'));
         add_shortcode('youtube_playlist', array($this, 'render_youtube_playlist'));
+        add_shortcode('ezmbedyt_video', array($this, 'render_custom_youtube_video'));
+        add_shortcode('ezmbedyt_playlist', array($this, 'render_youtube_playlist'));
     }
     
     public function render_youtube_video($atts) {
