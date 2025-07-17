@@ -138,6 +138,20 @@ class YouTubeVideoAdmin {
             }
         }
         
+        // Save custom order logic for videos tab
+        if (isset($_POST['save_order']) && $_POST['save_order'] == '1' && !empty($_POST['order_ids'])) {
+            $tab = isset($_POST['tab']) ? $_POST['tab'] : (isset($_GET['tab']) ? $_GET['tab'] : '');
+            if ($tab === 'videos') {
+                $ids = explode(',', $_POST['order_ids']);
+                $i = 1;
+                foreach ($ids as $id) {
+                    $this->database->update_video_order(intval($id), $i);
+                    $i++;
+                }
+                echo '<div class="notice notice-success is-dismissible"><p>Video order saved successfully!</p></div>';
+            }
+        }
+        
         if (!isset($_POST['action'])) {
             return;
         }

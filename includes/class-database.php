@@ -32,6 +32,7 @@ class YouTubeVideoDatabase {
             is_playlist tinyint(1) DEFAULT 0,
             playlist_id varchar(50) DEFAULT NULL,
             view_count int(11) DEFAULT 0,
+            `order` int(11) DEFAULT 0,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id)
@@ -53,9 +54,19 @@ class YouTubeVideoDatabase {
         ) $charset_collate;";
         
         dbDelta($sql2);
+
+        // Migration: Set 'order' for existing videos if any are 0 or NULL
+        $existing = $wpdb->get_results("SELECT id FROM $table_name WHERE `order` = 0 OR `order` IS NULL ORDER BY created_at ASC");
+        if ($existing) {
+            $i = 1;
+            foreach ($existing as $row) {
+                $wpdb->update($table_name, array('order' => $i), array('id' => $row->id));
+                $i++;
+            }
+        }
     }
     
-    public function get_videos($order_by = 'created_at DESC') {
+    public function get_videos($order_by = '`order` ASC, created_at DESC') {
         global $wpdb;
         $table_name = $wpdb->prefix . 'youtube_videos';
         return $wpdb->get_results("SELECT * FROM $table_name ORDER BY $order_by");
@@ -70,7 +81,7 @@ class YouTubeVideoDatabase {
     public function get_active_videos() {
         global $wpdb;
         $table_name = $wpdb->prefix . 'youtube_videos';
-        return $wpdb->get_results("SELECT * FROM $table_name WHERE (start_date IS NULL OR start_date <= NOW()) AND (end_date IS NULL OR end_date >= NOW()) ORDER BY created_at ASC");
+        return $wpdb->get_results("SELECT * FROM $table_name WHERE (start_date IS NULL OR start_date <= NOW()) AND (end_date IS NULL OR end_date >= NOW()) ORDER BY `order` ASC, created_at ASC");
     }
     
     public function save_video($data) {
@@ -163,5 +174,11 @@ class YouTubeVideoDatabase {
     public function get_last_insert_id() {
         global $wpdb;
         return $wpdb->insert_id;
+    }
+
+    public function update_video_order($id, $order) {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'youtube_videos';
+        return $wpdb->update($table_name, array('order' => intval($order)), array('id' => intval($id)));
     }
 } 

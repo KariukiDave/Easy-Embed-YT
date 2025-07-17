@@ -8,7 +8,27 @@
 
 if (!defined('ABSPATH')) exit;
 
-$videos = $this->database->get_videos();
+$sort = isset($_GET['sort']) ? $_GET['sort'] : 'order';
+$order = isset($_GET['order']) ? $_GET['order'] : 'asc';
+$sortable = [
+    'order' => '`order`',
+    'id' => 'id',
+    'title' => 'title',
+    'views' => 'view_count',
+    'created' => 'created_at',
+];
+$sort_sql = isset($sortable[$sort]) ? $sortable[$sort] : '`order`';
+$order_sql = strtolower($order) === 'desc' ? 'DESC' : 'ASC';
+$videos = $this->database->get_videos("$sort_sql $order_sql");
+function sort_link($label, $col, $current_sort, $current_order) {
+    $next_order = ($current_sort === $col && $current_order === 'asc') ? 'desc' : 'asc';
+    $arrow = '';
+    if ($current_sort === $col) {
+        $arrow = $current_order === 'asc' ? ' ▲' : ' ▼';
+    }
+    $url = add_query_arg(['sort' => $col, 'order' => $next_order]);
+    return '<a href="' . esc_url($url) . '">' . esc_html($label) . $arrow . '</a>';
+}
 ?>
 
 <div class="tabcontent">
@@ -23,7 +43,7 @@ $videos = $this->database->get_videos();
         $show_bulk_edit = isset($_POST['bulk_action']) && $_POST['bulk_action'] === 'edit' && !empty($_POST['video_ids']) && is_array($_POST['video_ids']);
         $selected_ids = $show_bulk_edit ? array_map('intval', $_POST['video_ids']) : [];
         ?>
-        <form method="post" action="">
+        <form method="post" action="" id="video-order-form">
             <input type="hidden" name="tab" value="videos">
             <div style="margin-bottom:10px;display:flex;align-items:center;gap:10px;">
                 <select name="bulk_action" style="min-width:120px;">
@@ -32,6 +52,7 @@ $videos = $this->database->get_videos();
                     <option value="edit" <?php if ($show_bulk_edit) echo 'selected'; ?>>Edit Settings</option>
                 </select>
                 <button type="submit" class="button">Apply</button>
+                <button type="button" id="save-order-btn" class="button button-secondary" style="margin-left:auto;">Save Order</button>
             </div>
             <?php if ($show_bulk_edit): ?>
                 <div style="background:#f9f9f9;border:1px solid #ddd;padding:20px;margin-bottom:20px;">
@@ -69,23 +90,23 @@ $videos = $this->database->get_videos();
                     <button type="submit" class="button button-primary">Update Selected Videos</button>
                 </div>
             <?php endif; ?>
-            <table class="wp-list-table widefat fixed striped">
+            <table class="wp-list-table widefat fixed striped" id="videos-table">
                 <thead>
                     <tr>
-                        <th style="width:30px;"><input type="checkbox" id="select-all-videos"></th>
-                        <th>ID</th>
-                        <th>Title</th>
+                        <th style="width:30px;"></th>
+                        <th><?php echo sort_link('ID', 'id', $sort, $order); ?></th>
+                        <th><?php echo sort_link('Title', 'title', $sort, $order); ?></th>
                         <th>Video</th>
                         <th>Schedule</th>
-                        <th>Views</th>
+                        <th><?php echo sort_link('Views', 'views', $sort, $order); ?></th>
                         <th>Shortcode</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($videos as $video): ?>
-                        <tr>
-                            <td><input type="checkbox" name="video_ids[]" value="<?php echo esc_attr($video->id); ?>"></td>
+                        <tr data-id="<?php echo esc_attr($video->id); ?>">
+                            <td class="drag-handle" style="cursor:move;">&#9776;</td>
                             <td><?php echo esc_html($video->id); ?></td>
                             <td><?php echo esc_html($video->title); ?></td>
                             <td>
@@ -120,6 +141,8 @@ $videos = $this->database->get_videos();
                     <?php endforeach; ?>
                 </tbody>
             </table>
+            <input type="hidden" name="save_order" value="1" id="save-order-input" disabled>
+            <input type="hidden" name="order_ids" id="order-ids-input" value="">
         </form>
     <?php endif; ?>
     <div style="margin-top: 30px; padding: 20px; background: #f1f1f1; border-left: 4px solid #0073aa;">
@@ -131,6 +154,7 @@ $videos = $this->database->get_videos();
     </div>
 </div>
 
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
 <script>
 jQuery(document).ready(function($) {
     // Select all checkboxes
@@ -163,6 +187,32 @@ jQuery(document).ready(function($) {
             alert('Shortcode copied: ' + shortcode);
         }
         tempTextarea.remove();
+    });
+
+    // Drag-and-drop ordering
+    $('#videos-table tbody').sortable({
+        handle: '.drag-handle',
+        helper: function(e, tr) {
+            var $originals = tr.children();
+            var $helper = tr.clone();
+            $helper.children().each(function(index) {
+                $(this).width($originals.eq(index).width());
+            });
+            return $helper;
+        },
+        update: function(event, ui) {
+            $('#save-order-btn').addClass('button-primary');
+        }
+    }).disableSelection();
+    // Save order button
+    $('#save-order-btn').on('click', function() {
+        var ids = [];
+        $('#videos-table tbody tr').each(function() {
+            ids.push($(this).data('id'));
+        });
+        $('#order-ids-input').val(ids.join(','));
+        $('#save-order-input').prop('disabled', false);
+        $('#video-order-form').submit();
     });
 });
 </script> 
