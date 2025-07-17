@@ -14,7 +14,7 @@ $summary = $this->analytics->get_analytics_summary();
 ?>
 
 <div class="tabcontent">
-    <a href="?page=advanced-youtube-video&tab=add" class="button button-primary" style="margin-bottom:20px;font-size:16px;">
+    <a href="?page=advanced-youtube-video&tab=add" class="button button-primary" style="margin-top:15px;margin-bottom:20px;font-size:16px;">
         + Add New Video / Playlist
     </a>
     <h2>Video Analytics</h2>
