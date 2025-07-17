@@ -226,7 +226,10 @@ class YouTubeVideoAdmin {
             'use_dark_theme' => isset($_POST['use_dark_theme']) ? 1 : 0,
             'default_aspect_ratio' => sanitize_text_field($_POST['default_aspect_ratio']),
             'count_views_after_10s' => isset($_POST['count_views_after_10s']) ? 1 : 0,
-            'default_lightbox' => isset($_POST['default_lightbox']) ? 1 : 0
+            'default_lightbox' => isset($_POST['default_lightbox']) ? 1 : 0,
+            'gallery_columns' => isset($_POST['gallery_columns']) ? max(1, min(6, intval($_POST['gallery_columns']))) : 3,
+            'gallery_spacing' => isset($_POST['gallery_spacing']) ? max(0, intval($_POST['gallery_spacing'])) : 20,
+            'gallery_per_page' => isset($_POST['gallery_per_page']) ? max(1, intval($_POST['gallery_per_page'])) : 9
         );
         
         $this->settings->save_settings($settings);

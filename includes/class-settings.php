@@ -21,7 +21,10 @@ class YouTubeVideoSettings {
             'use_dark_theme' => 0,
             'default_aspect_ratio' => '16:9',
             'count_views_after_10s' => 0,
-            'default_lightbox' => 1
+            'default_lightbox' => 1,
+            'gallery_columns' => 3,
+            'gallery_spacing' => 20,
+            'gallery_per_page' => 9
         );
     }
     

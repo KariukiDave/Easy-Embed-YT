@@ -106,6 +106,21 @@ $settings = $this->settings->get_settings();
                     <span class="dashicons dashicons-editor-help" style="color: #0073aa; cursor: help;" title="Default aspect ratio for video players"></span>
                 </td>
             </tr>
+            <tr>
+                <th scope="row">Gallery Layout</th>
+                <td>
+                    <fieldset>
+                        <label for="gallery_columns">Columns:</label>
+                        <input type="number" name="gallery_columns" id="gallery_columns" value="<?php echo isset($settings['gallery_columns']) ? intval($settings['gallery_columns']) : 3; ?>" min="1" max="6" style="width:60px;">
+                        &nbsp;&nbsp;
+                        <label for="gallery_spacing">Spacing (px):</label>
+                        <input type="number" name="gallery_spacing" id="gallery_spacing" value="<?php echo isset($settings['gallery_spacing']) ? intval($settings['gallery_spacing']) : 20; ?>" min="0" max="100" style="width:60px;">
+                        &nbsp;&nbsp;
+                        <label for="gallery_per_page">Videos per page:</label>
+                        <input type="number" name="gallery_per_page" id="gallery_per_page" value="<?php echo isset($settings['gallery_per_page']) ? intval($settings['gallery_per_page']) : 9; ?>" min="1" max="50" style="width:60px;">
+                    </fieldset>
+                </td>
+            </tr>
         </table>
         
         <p class="submit">
