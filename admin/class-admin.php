@@ -91,6 +91,51 @@ class YouTubeVideoAdmin {
     }
     
     private function handle_form_submission() {
+        // Bulk delete logic for videos tab
+        if (isset($_POST['bulk_action']) && $_POST['bulk_action'] === 'delete' && !empty($_POST['video_ids']) && is_array($_POST['video_ids'])) {
+            // Security: Only allow on videos tab
+            if (isset($_GET['tab']) && $_GET['tab'] === 'videos') {
+                foreach ($_POST['video_ids'] as $id) {
+                    $this->delete_video(intval($id));
+                }
+                echo '<div class="notice notice-success is-dismissible"><p>Selected videos deleted successfully!</p></div>';
+            }
+        }
+        
+        // Bulk edit logic for videos tab
+        if (isset($_POST['bulk_action']) && $_POST['bulk_action'] === 'bulk_edit_save' && !empty($_POST['video_ids']) && is_array($_POST['video_ids'])) {
+            if (isset($_GET['tab']) && $_GET['tab'] === 'videos') {
+                $fields = [
+                    'autoplay' => 'bulk_autoplay',
+                    'hide_controls' => 'bulk_hide_controls',
+                    'loop_video' => 'bulk_loop_video',
+                    'mute_video' => 'bulk_mute_video',
+                    'lazy_load' => 'bulk_lazy_load',
+                    'lightbox' => 'bulk_lightbox',
+                ];
+                $update = [];
+                foreach ($fields as $db_field => $post_field) {
+                    if (isset($_POST[$post_field])) {
+                        $update[$db_field] = 1;
+                    }
+                }
+                if (!empty($update)) {
+                    foreach ($_POST['video_ids'] as $id) {
+                        $id = intval($id);
+                        $video = $this->database->get_video($id);
+                        if ($video) {
+                            $data = (array)$video;
+                            foreach ($update as $k => $v) {
+                                $data[$k] = $v;
+                            }
+                            $this->database->save_video($data);
+                        }
+                    }
+                    echo '<div class="notice notice-success is-dismissible"><p>Selected videos updated successfully!</p></div>';
+                }
+            }
+        }
+        
         if (!isset($_POST['action'])) {
             return;
         }
