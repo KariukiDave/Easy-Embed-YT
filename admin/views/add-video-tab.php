@@ -30,6 +30,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($edit_id) && isset($_POST['ac
 ?>
 
 <div class="tabcontent">
+    <a href="?page=advanced-youtube-video&tab=add" class="button button-primary" style="margin-bottom:20px;font-size:16px;">
+        + Add New Video / Playlist
+    </a>
     <h2><?php echo $edit_id ? 'Edit Video' : 'Add New Video'; ?></h2>
     <?php if ($just_added): ?>
         <div class="notice notice-success" style="padding:15px 20px 15px 20px;margin-bottom:20px;">

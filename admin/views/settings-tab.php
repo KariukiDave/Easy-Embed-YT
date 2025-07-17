@@ -12,6 +12,9 @@ $settings = $this->settings->get_settings();
 ?>
 
 <div class="tabcontent">
+    <a href="?page=advanced-youtube-video&tab=add" class="button button-primary" style="margin-bottom:20px;font-size:16px;">
+        + Add New Video / Playlist
+    </a>
     <h2>Global Settings</h2>
     <form method="post" action="">
         <?php wp_nonce_field('youtube_settings_action', 'youtube_settings_nonce'); ?>

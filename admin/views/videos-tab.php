@@ -12,6 +12,9 @@ $videos = $this->database->get_videos();
 ?>
 
 <div class="tabcontent">
+    <a href="?page=advanced-youtube-video&tab=add" class="button button-primary" style="margin-bottom:20px;font-size:16px;">
+        + Add New Video / Playlist
+    </a>
     <h2>Video Library</h2>
     <?php if (empty($videos)): ?>
         <p>No videos found. <a href="?page=advanced-youtube-video&tab=add">Add your first video</a>.</p>
