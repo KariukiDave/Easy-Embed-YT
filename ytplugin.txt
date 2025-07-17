@@ -1,0 +1,56 @@
+1. Smart Shortcode Generation 🎯
+
+Automatic Detection: When a playlist URL is added, it automatically generates [youtube_playlist id="X"]
+Video URLs: Still generate [custom_youtube_video id="X"]
+Dynamic Display: Both the video library and analytics tabs now show the correct shortcode format based on content type
+
+2. Copy-to-Clipboard Functionality 📋
+
+Click to Copy: All shortcodes are now clickable with a pointer cursor
+Visual Feedback:
+
+Background changes to green when copied
+"✓ Copied!" message appears
+Resets after 2 seconds
+
+
+Auto-Copy: When a new video/playlist is added, the shortcode is automatically copied to clipboard
+Universal: Works in both the video library table and analytics table
+
+3. Enhanced User Experience 🚀
+
+Visual Cues: Shortcodes have hover states and tooltips saying "Click to copy"
+Error Handling: Graceful fallback for older browsers
+Immediate Feedback: Users instantly know their shortcode is ready to paste
+Smart Styling: Copied shortcodes get highlighted temporarily
+
+🎬 How It Works:
+Adding Videos/Playlists:
+
+Paste any YouTube URL (video or playlist)
+Plugin automatically detects the type
+Generates appropriate shortcode format
+Automatically copies shortcode to clipboard ✨
+Shows success message with clickable shortcode
+
+In Video Library:
+
+Video URLs → [custom_youtube_video id="1"]
+Playlist URLs → [youtube_playlist id="2"]
+Click any shortcode → Instantly copied to clipboard
+
+User Flow:
+
+Add video/playlist → Shortcode auto-copied
+Go to editor/page → Paste shortcode (Ctrl+V)
+Or click any shortcode in library → Copy again anytime
+
+🔧 Technical Improvements:
+
+Smart URL Detection: Distinguishes between video and playlist URLs
+Dynamic Shortcode Generation: Based on content type
+Cross-browser Compatibility: Works in modern and older browsers
+jQuery Integration: Smooth animations and interactions
+No Page Reload: AJAX-powered copy functionality
+
+The plugin now provides a seamless experience - users never have to manually edit shortcodes or remember the correct format! 🎉
