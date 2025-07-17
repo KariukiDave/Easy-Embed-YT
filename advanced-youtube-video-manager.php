@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: Advanced YouTube Video Manager
- * Plugin URI: https://yourwebsite.com
+ * Plugin URI: https://glowbal.co.ke
  * Description: Advanced YouTube video management with scheduling, playlists, analytics, and multiple video support.
  * Version: 2.4.0
  * Requires at least: 5.0
