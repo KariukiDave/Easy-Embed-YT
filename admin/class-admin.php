@@ -94,7 +94,8 @@ class YouTubeVideoAdmin {
         // Bulk delete logic for videos tab
         if (isset($_POST['bulk_action']) && $_POST['bulk_action'] === 'delete' && !empty($_POST['video_ids']) && is_array($_POST['video_ids'])) {
             // Security: Only allow on videos tab
-            if (isset($_GET['tab']) && $_GET['tab'] === 'videos') {
+            $tab = isset($_POST['tab']) ? $_POST['tab'] : (isset($_GET['tab']) ? $_GET['tab'] : '');
+            if ($tab === 'videos') {
                 foreach ($_POST['video_ids'] as $id) {
                     $this->delete_video(intval($id));
                 }
@@ -104,7 +105,8 @@ class YouTubeVideoAdmin {
         
         // Bulk edit logic for videos tab
         if (isset($_POST['bulk_action']) && $_POST['bulk_action'] === 'bulk_edit_save' && !empty($_POST['video_ids']) && is_array($_POST['video_ids'])) {
-            if (isset($_GET['tab']) && $_GET['tab'] === 'videos') {
+            $tab = isset($_POST['tab']) ? $_POST['tab'] : (isset($_GET['tab']) ? $_GET['tab'] : '');
+            if ($tab === 'videos') {
                 $fields = [
                     'autoplay' => 'bulk_autoplay',
                     'hide_controls' => 'bulk_hide_controls',

@@ -24,6 +24,7 @@ $videos = $this->database->get_videos();
         $selected_ids = $show_bulk_edit ? array_map('intval', $_POST['video_ids']) : [];
         ?>
         <form method="post" action="">
+            <input type="hidden" name="tab" value="videos">
             <div style="margin-bottom:10px;display:flex;align-items:center;gap:10px;">
                 <select name="bulk_action" style="min-width:120px;">
                     <option value="">Bulk Actions</option>
