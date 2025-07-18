@@ -145,6 +145,32 @@ function sort_link($label, $col, $current_sort, $current_order) {
             <input type="hidden" name="order_ids" id="order-ids-input" value="">
         </form>
     <?php endif; ?>
+    <div style="margin-top: 30px; padding: 22px 24px; background: linear-gradient(90deg, #e8f4fa 80%, #d1eaff 100%); border-left: 5px solid #0073aa; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+        <h2 style="margin-top:0;font-size:1.4em;display:flex;align-items:center;gap:10px;">
+            <span style="font-size:1.5em;">🎬</span> Gallery Feature & Shortcode
+        </h2>
+        <p style="font-size:1.08em;margin-bottom:12px;">
+            <strong>Easily display multiple YouTube videos in a beautiful, responsive gallery grid anywhere on your site!</strong>
+        </p>
+        <div style="margin-bottom:10px;">
+            <span style="display:inline-block;width:2.2em;">📋</span>
+            <strong>All videos:</strong> <code>[ezmbedyt_gallery]</code>
+        </div>
+        <div style="margin-bottom:10px;">
+            <span style="display:inline-block;width:2.2em;">🎯</span>
+            <strong>Specific videos:</strong> <code>[ezmbedyt_gallery ids="1,2,3"]</code>
+        </div>
+        <div style="margin-bottom:10px;">
+            <span style="display:inline-block;width:2.2em;">🛠️</span>
+            <strong>Custom layout:</strong> <code>[ezmbedyt_gallery columns="4" spacing="30" per_page="8"]</code>
+        </div>
+        <div style="margin:14px 0 0 0; color:#155a7a; font-size:0.98em;">
+            <span style="font-size:1.1em;">💡</span> <strong>Tip:</strong> You can set default gallery layout (columns, spacing, per page) in the <a href="?page=advanced-youtube-video&tab=settings">plugin settings</a>.
+        </div>
+        <div style="margin-top:8px;color:#155a7a;font-size:0.98em;">
+            <span style="font-size:1.1em;">✨</span> Supports pagination, drag-and-drop ordering, and mobile-friendly design.
+        </div>
+    </div>
     <div style="margin-top: 30px; padding: 20px; background: #f1f1f1; border-left: 4px solid #0073aa;">
         <h3>Shortcode Usage</h3>
         <p><strong>Legacy (backward compatible):</strong> <code>[youtube_video]</code> - Shows the first active video</p>
