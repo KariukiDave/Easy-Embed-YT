@@ -47,6 +47,8 @@ class AdvancedYouTubeVideo {
         add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts'));
         add_action('wp_ajax_youtube_video_play', array($this, 'track_video_play'));
         add_action('wp_ajax_nopriv_youtube_video_play', array($this, 'track_video_play'));
+        add_action('wp_ajax_analytics_get_view_logs', array('YouTubeVideoAnalytics', 'ajax_get_view_logs'));
+        add_action('wp_ajax_nopriv_analytics_get_view_logs', array('YouTubeVideoAnalytics', 'ajax_get_view_logs'));
     }
     
     private function register_shortcodes() {

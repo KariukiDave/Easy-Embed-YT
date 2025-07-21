@@ -8,7 +8,13 @@
 
 if (!defined('ABSPATH')) exit;
 
-$videos = $this->database->get_videos();
+$per_page = 20;
+$paged = isset($_GET['apage']) ? max(1, intval($_GET['apage'])) : 1;
+$paginated = $this->database->get_videos_paginated($paged, $per_page, 'view_count DESC');
+$videos_table = $paginated['videos'];
+$total = $paginated['total'];
+$total_pages = ceil($total / $per_page);
+$videos = $this->database->get_videos('view_count DESC'); // For summary/top5/trends only
 $view_logs = $this->analytics->get_view_logs();
 $summary = $this->analytics->get_analytics_summary();
 ?>
@@ -43,17 +49,8 @@ $summary = $this->analytics->get_analytics_summary();
         <!-- Video Stats Tab -->
         <div class="yt-analytics-tab" id="yt-analytics-video-stats" style="display:none;">
             <h3>All Videos</h3>
-            <div style="margin-bottom:15px;">
-                <label for="yt-stats-date-range">Date Range:</label>
-                <select id="yt-stats-date-range">
-                    <option value="7">Last 7 days</option>
-                    <option value="30">Last 30 days</option>
-                    <option value="custom">Custom</option>
-                </select>
-                <span id="yt-custom-range" style="display:none;">
-                    <input type="text" id="yt-date-start" placeholder="Start date" style="width:110px;"> -
-                    <input type="text" id="yt-date-end" placeholder="End date" style="width:110px;">
-                </span>
+            <div style="margin-bottom:10px;font-size:1.05em;">
+                Showing <strong><?php echo count($videos_table); ?></strong> of <strong><?php echo $total; ?></strong> videos. Page <strong><?php echo $paged; ?></strong> of <strong><?php echo $total_pages; ?></strong>.
             </div>
             <table class="wp-list-table widefat fixed striped">
                 <thead>
@@ -65,7 +62,7 @@ $summary = $this->analytics->get_analytics_summary();
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($videos as $video): ?>
+                    <?php foreach ($videos_table as $video): ?>
                     <tr>
                         <td><a href="#" class="yt-video-title" data-id="<?php echo $video->id; ?>" data-title="<?php echo esc_attr($video->title); ?>" data-url="<?php echo esc_url($video->youtube_url); ?>" data-videoid="<?php echo esc_attr($video->video_id); ?>" data-isplaylist="<?php echo $video->is_playlist; ?>"><?php echo esc_html($video->title); ?></a></td>
                         <td><?php echo number_format($video->view_count); ?></td>
@@ -82,6 +79,16 @@ $summary = $this->analytics->get_analytics_summary();
                     <?php endforeach; ?>
                 </tbody>
             </table>
+            <?php if ($total_pages > 1): ?>
+                <div style="margin:18px 0 0 0;text-align:center;">
+                    <?php for ($i = 1; $i <= $total_pages; $i++):
+                        $url = add_query_arg(['apage' => $i]);
+                        $active = $i == $paged ? 'font-weight:bold;text-decoration:underline;color:#0073aa;' : '';
+                    ?>
+                        <a href="<?php echo esc_url($url); ?>" style="margin:0 7px;<?php echo $active; ?>"><?php echo $i; ?></a>
+                    <?php endfor; ?>
+                </div>
+            <?php endif; ?>
         </div>
         
         <!-- Trends Tab -->
@@ -204,28 +211,36 @@ jQuery(function($){
         }
     });
     
-    // Trends line chart
-    var allLogs = <?php echo json_encode($view_logs); ?>;
-    function getTrendsData(videoId, days, start, end) {
-        var logs = allLogs.filter(l=>l.video_id==videoId);
-        var dateMap = {};
-        logs.forEach(l=>{dateMap[l.view_date]=parseInt(l.views)});
-        var labels = [], data = [];
-        var d0 = start ? new Date(start) : new Date();
-        var d1 = end ? new Date(end) : new Date();
-        if(!start||!end){
-            d1 = new Date();
-            d0 = new Date();
-            d0.setDate(d1.getDate()-days+1);
-        }
-        for(var d=new Date(d0);d<=d1;d.setDate(d.getDate()+1)){
-            var ds = d.toISOString().slice(0,10);
-            labels.push(ds);
-            data.push(dateMap[ds]||0);
-        }
-        return {labels,data};
+    // Trends line chart (AJAX version)
+    function fetchTrendsData(videoId, days, start, end, cb) {
+        var data = {
+            action: 'analytics_get_view_logs',
+            video_id: videoId
+        };
+        if (start) data.start = start;
+        if (end) data.end = end;
+        $.post(ajaxurl, data, function(resp){
+            if (resp.success) {
+                var logs = resp.data;
+                var dateMap = {};
+                logs.forEach(function(l){dateMap[l.view_date]=parseInt(l.views)});
+                var labels = [], chartData = [];
+                var d0 = start ? new Date(start) : new Date();
+                var d1 = end ? new Date(end) : new Date();
+                if(!start||!end){
+                    d1 = new Date();
+                    d0 = new Date();
+                    d0.setDate(d1.getDate()-(days||7)+1);
+                }
+                for(var d=new Date(d0);d<=d1;d.setDate(d.getDate()+1)){
+                    var ds = d.toISOString().slice(0,10);
+                    labels.push(ds);
+                    chartData.push(dateMap[ds]||0);
+                }
+                cb(labels, chartData);
+            }
+        });
     }
-    
     var trendsChart;
     function renderTrends(){
         var vid = $('#yt-trends-video').val();
@@ -233,69 +248,69 @@ jQuery(function($){
         var start = $('#yt-trends-date-start').val();
         var end = $('#yt-trends-date-end').val();
         var days = range==='custom'?null:parseInt(range);
-        var d = getTrendsData(vid, days||7, start, end);
-        if(trendsChart) trendsChart.destroy();
-        var ctx = document.getElementById('yt-trends-line').getContext('2d');
-        trendsChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: d.labels,
-                datasets: [{
-                    label: 'Views',
-                    data: d.data,
-                    fill: true,
-                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
-                    borderColor: 'rgba(0, 123, 255, 1)',
-                    borderWidth: 2,
-                    pointBackgroundColor: 'rgba(0, 123, 255, 1)',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    pointRadius: 4,
-                    pointHoverRadius: 6,
-                    tension: 0.3
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        titleColor: '#fff',
-                        bodyColor: '#fff',
-                        borderColor: 'rgba(0, 123, 255, 0.5)',
-                        borderWidth: 1
-                    }
+        fetchTrendsData(vid, days||7, start, end, function(labels, data){
+            if(trendsChart) trendsChart.destroy();
+            var ctx = document.getElementById('yt-trends-line').getContext('2d');
+            trendsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Views',
+                        data: data,
+                        fill: true,
+                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                        borderColor: 'rgba(0, 123, 255, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(0, 123, 255, 1)',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        tension: 0.3
+                    }]
                 },
-                scales: {
-                    x: {
-                        grid: {
-                            color: 'rgba(0, 0, 0, 0.1)',
-                            drawBorder: false
-                        },
-                        ticks: {
-                            color: '#666',
-                            font: { size: 11 },
-                            maxTicksLimit: 8
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            borderColor: 'rgba(0, 123, 255, 0.5)',
+                            borderWidth: 1
                         }
                     },
-                    y: {
-                        beginAtZero: true,
-                        grid: {
-                            color: 'rgba(0, 0, 0, 0.1)',
-                            drawBorder: false
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: '#666',
+                                font: { size: 11 },
+                                maxTicksLimit: 8
+                            }
                         },
-                        ticks: {
-                            color: '#666',
-                            font: { size: 11 }
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: '#666',
+                                font: { size: 11 }
+                            }
                         }
                     }
                 }
-            }
+            });
         });
     }
-    
     $('#yt-trends-video,#yt-trends-range,#yt-trends-date-start,#yt-trends-date-end').on('change',renderTrends);
     renderTrends();
     

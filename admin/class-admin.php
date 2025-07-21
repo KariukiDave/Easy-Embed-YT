@@ -93,12 +93,9 @@ class YouTubeVideoAdmin {
     private function handle_form_submission() {
         // Bulk delete logic for videos tab
         if (isset($_POST['bulk_action']) && $_POST['bulk_action'] === 'delete' && !empty($_POST['video_ids']) && is_array($_POST['video_ids'])) {
-            // Security: Only allow on videos tab
             $tab = isset($_POST['tab']) ? $_POST['tab'] : (isset($_GET['tab']) ? $_GET['tab'] : '');
             if ($tab === 'videos') {
-                foreach ($_POST['video_ids'] as $id) {
-                    $this->delete_video(intval($id));
-                }
+                $this->database->bulk_delete_videos($_POST['video_ids']);
                 echo '<div class="notice notice-success is-dismissible"><p>Selected videos deleted successfully!</p></div>';
             }
         }
@@ -122,17 +119,7 @@ class YouTubeVideoAdmin {
                     }
                 }
                 if (!empty($update)) {
-                    foreach ($_POST['video_ids'] as $id) {
-                        $id = intval($id);
-                        $video = $this->database->get_video($id);
-                        if ($video) {
-                            $data = (array)$video;
-                            foreach ($update as $k => $v) {
-                                $data[$k] = $v;
-                            }
-                            $this->database->save_video($data);
-                        }
-                    }
+                    $this->database->bulk_update_videos($_POST['video_ids'], $update);
                     echo '<div class="notice notice-success is-dismissible"><p>Selected videos updated successfully!</p></div>';
                 }
             }

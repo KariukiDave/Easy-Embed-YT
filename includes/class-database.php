@@ -35,7 +35,8 @@ class YouTubeVideoDatabase {
             `order` int(11) DEFAULT 0,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            PRIMARY KEY (id)
+            PRIMARY KEY (id),
+            KEY idx_order (`order`)
         ) $charset_collate;";
         
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
@@ -180,5 +181,40 @@ class YouTubeVideoDatabase {
         global $wpdb;
         $table_name = $wpdb->prefix . 'youtube_videos';
         return $wpdb->update($table_name, array('order' => intval($order)), array('id' => intval($id)));
+    }
+
+    public function get_videos_paginated($paged = 1, $per_page = 20, $order_by = '`order` ASC, created_at DESC') {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'youtube_videos';
+        $offset = ($paged - 1) * $per_page;
+        $results = $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM $table_name ORDER BY $order_by LIMIT %d OFFSET %d",
+            $per_page, $offset
+        ));
+        $total = $wpdb->get_var("SELECT COUNT(*) FROM $table_name");
+        return array('videos' => $results, 'total' => intval($total));
+    }
+
+    public function bulk_delete_videos($ids) {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'youtube_videos';
+        $ids = array_map('intval', $ids);
+        if (empty($ids)) return 0;
+        $in = implode(',', $ids);
+        return $wpdb->query("DELETE FROM $table_name WHERE id IN ($in)");
+    }
+
+    public function bulk_update_videos($ids, $fields) {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'youtube_videos';
+        $ids = array_map('intval', $ids);
+        if (empty($ids) || empty($fields)) return 0;
+        $set = [];
+        foreach ($fields as $k => $v) {
+            $set[] = "$k = " . intval($v);
+        }
+        $set_sql = implode(', ', $set);
+        $in = implode(',', $ids);
+        return $wpdb->query("UPDATE $table_name SET $set_sql WHERE id IN ($in)");
     }
 } 

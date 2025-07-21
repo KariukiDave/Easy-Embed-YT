@@ -98,4 +98,21 @@ class YouTubeVideoAnalytics {
             'data' => $data
         );
     }
+
+    public static function ajax_get_view_logs() {
+        if (!current_user_can('manage_options')) wp_send_json_error('Unauthorized', 403);
+        $video_id = isset($_POST['video_id']) ? intval($_POST['video_id']) : 0;
+        $start = isset($_POST['start']) ? sanitize_text_field($_POST['start']) : null;
+        $end = isset($_POST['end']) ? sanitize_text_field($_POST['end']) : null;
+        $logs = (new self())->get_view_logs($video_id);
+        // Optionally filter by date range
+        if ($start || $end) {
+            $logs = array_filter($logs, function($log) use ($start, $end) {
+                if ($start && $log->view_date < $start) return false;
+                if ($end && $log->view_date > $end) return false;
+                return true;
+            });
+        }
+        wp_send_json_success(array_values($logs));
+    }
 } 

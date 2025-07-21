@@ -8,6 +8,8 @@
 
 if (!defined('ABSPATH')) exit;
 
+$per_page = 20;
+$paged = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
 $sort = isset($_GET['sort']) ? $_GET['sort'] : 'order';
 $order = isset($_GET['order']) ? $_GET['order'] : 'asc';
 $sortable = [
@@ -19,14 +21,17 @@ $sortable = [
 ];
 $sort_sql = isset($sortable[$sort]) ? $sortable[$sort] : '`order`';
 $order_sql = strtolower($order) === 'desc' ? 'DESC' : 'ASC';
-$videos = $this->database->get_videos("$sort_sql $order_sql");
+$paginated = $this->database->get_videos_paginated($paged, $per_page, "$sort_sql $order_sql");
+$videos = $paginated['videos'];
+$total = $paginated['total'];
+$total_pages = ceil($total / $per_page);
 function sort_link($label, $col, $current_sort, $current_order) {
     $next_order = ($current_sort === $col && $current_order === 'asc') ? 'desc' : 'asc';
     $arrow = '';
     if ($current_sort === $col) {
         $arrow = $current_order === 'asc' ? ' ▲' : ' ▼';
     }
-    $url = add_query_arg(['sort' => $col, 'order' => $next_order]);
+    $url = add_query_arg(['sort' => $col, 'order' => $next_order, 'paged' => 1]);
     return '<a href="' . esc_url($url) . '">' . esc_html($label) . $arrow . '</a>';
 }
 ?>
@@ -36,6 +41,9 @@ function sort_link($label, $col, $current_sort, $current_order) {
         + Add New Video / Playlist
     </a>
     <h2>Video Library</h2>
+    <div style="margin-bottom:10px;font-size:1.05em;">
+        Showing <strong><?php echo count($videos); ?></strong> of <strong><?php echo $total; ?></strong> videos. Page <strong><?php echo $paged; ?></strong> of <strong><?php echo $total_pages; ?></strong>.
+    </div>
     <?php if (empty($videos)): ?>
         <p>No videos found. <a href="?page=advanced-youtube-video&tab=add">Add your first video</a>.</p>
     <?php else: ?>
@@ -141,6 +149,16 @@ function sort_link($label, $col, $current_sort, $current_order) {
                     <?php endforeach; ?>
                 </tbody>
             </table>
+            <?php if ($total_pages > 1): ?>
+                <div style="margin:18px 0 0 0;text-align:center;">
+                    <?php for ($i = 1; $i <= $total_pages; $i++):
+                        $url = add_query_arg(['paged' => $i]);
+                        $active = $i == $paged ? 'font-weight:bold;text-decoration:underline;color:#0073aa;' : '';
+                    ?>
+                        <a href="<?php echo esc_url($url); ?>" style="margin:0 7px;<?php echo $active; ?>"><?php echo $i; ?></a>
+                    <?php endfor; ?>
+                </div>
+            <?php endif; ?>
             <input type="hidden" name="save_order" value="1" id="save-order-input" disabled>
             <input type="hidden" name="order_ids" id="order-ids-input" value="">
         </form>
